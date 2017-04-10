@@ -1,0 +1,45 @@
+upstream capacitor {
+    server localhost:8000;
+}
+
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name mirrors.cqu.edu.cn;
+
+    access_log      /var/log/mirrors.cqu.edu.cn.access.log main;
+    ssl_certificate /etc/nginx/ssl-secrets/mirrors.cqu.edu.cn_bundle.crt;
+
+    root  /srv/www/mirrors;
+    index index.php index.html;
+
+    include sites-available/redirect_schemes;
+
+    location ~ ^/(webin|wiki)/.*\.php$ {
+       fastcgi_pass    unix:/dev/shm/fpm-cgi.sock;
+       fastcgi_index   index.php;
+       fastcgi_param   SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+       include         fastcgi_params;
+    }
+
+    location ~ ^/api/ {
+       proxy_pass_header   Server;
+       proxy_set_header    Host      $http_host;
+       proxy_redirect      off;
+       proxy_set_header    X-Real-IP $remote_addr;
+       proxy_set_header    X-Scheme  $scheme;
+       proxy_pass          http://capacitor;
+    }
+
+    location ~ ^/blog {
+        deny all;
+    }
+
+    location ~ ^/bin {
+        deny all;
+    }
+
+    location ~ /\.ht {
+        deny  all;
+    }
+}
