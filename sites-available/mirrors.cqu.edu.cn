@@ -1,45 +1,36 @@
-upstream capacitor {
-    server localhost:8000;
-}
-
 server {
-    listen 80;
+    listen 80 default_server;
     listen 443 ssl;
     server_name mirrors.cqu.edu.cn;
 
-    access_log      /var/log/mirrors.cqu.edu.cn.access.log main;
+    access_log      /var/log/nginx/mirrors.cqu.edu.cn.access.log main;
     ssl_certificate /etc/nginx/ssl-secrets/mirrors.cqu.edu.cn_bundle.crt;
 
-    root  /srv/www/mirrors;
-    index index.php index.html;
+    root  /srv/www/;
+    index index.html;
 
     include sites-available/redirect_schemes;
 
-    location ~ ^/(webin|wiki)/.*\.php$ {
-       fastcgi_pass    unix:/dev/shm/fpm-cgi.sock;
-       fastcgi_index   index.php;
-       fastcgi_param   SCRIPT_FILENAME  $document_root$fastcgi_script_name;
-       include         fastcgi_params;
+    location = /static/tunasync.json {
+        proxy_pass http://localhost:14242/jobs;
     }
 
-    location ~ ^/api/ {
-       proxy_pass_header   Server;
-       proxy_set_header    Host      $http_host;
-       proxy_redirect      off;
-       proxy_set_header    X-Real-IP $remote_addr;
-       proxy_set_header    X-Scheme  $scheme;
-       proxy_pass          http://capacitor;
+    location ~ /(repair/.*) {
+        resolver 202.202.0.33;
+        proxy_pass https://lanunion.cqu.edu.cn/$1;
     }
 
-    location ~ ^/blog {
-        deny all;
-    }
+    location ~ ^/git(/.*) {
+        root /srv/git/;
+        client_max_body_size 0;
 
-    location ~ ^/bin {
-        deny all;
-    }
-
-    location ~ /\.ht {
-        deny  all;
+        fastcgi_pass  unix:/var/run/fcgi-git.sock;
+        fastcgi_read_timeout 300s;
+        fastcgi_param SCRIPT_FILENAME   /usr/libexec/git-core/git-http-backend;
+        fastcgi_param PATH_INFO         $1;
+        fastcgi_param GIT_PROJECT_ROOT  /srv/git/;
+        fastcgi_param GIT_HTTP_EXPORT_ALL "";
+        fastcgi_param REMOTE_USER       $remote_user;
+        include fastcgi_params;
     }
 }

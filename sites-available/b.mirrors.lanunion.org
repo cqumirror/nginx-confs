@@ -1,0 +1,11 @@
+server {
+    listen 80 default_server;
+    listen 443 ssl;
+    server_name b.mirrors.lanunion.org;
+
+    access_log      /var/log/nginx/b.mirrors.lanunion.org.access.log main;
+
+    ssl_certificate /etc/nginx/ssl-secrets/lanunion.org_bundle.crt;
+
+    root  /srv/www/;
+}

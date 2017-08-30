@@ -1,4 +1,4 @@
-.DS_Store
 *.pyc
+sites-enabled/
 ssl-secrets/
-venv/
+local/
